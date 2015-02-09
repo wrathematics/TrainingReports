@@ -1,0 +1,66 @@
+```{r, eval=TRUE, echo=FALSE}
+file <- "path/to/registrant/data"
+preprocess_script <- "path/to/preprocess.r"
+source(preprocess_script)
+```
+
+---
+title: `r title`
+output: pdf_document
+---
+
+```{r, eval=TRUE, echo=FALSE}
+gender <- table(registrants$Gender)
+```
+
+The sex/gender breakdown is: `r paste(names(gender), gender, collapse=", ")`, for a total of `r sum(gender)` registrants.
+
+The organizations most represented by their attendees are shown in the plot below.
+
+```{r, eval=TRUE, echo=FALSE}
+
+orgs_tab <- sort(table(registrants$Organization), decreasing=TRUE)
+orgs_tab <- orgs_tab[1:(min(6L, length(orgs_tab)))]
+
+orgnames <- names(orgs_tab)
+orgs <- data.frame(Organization=factor(orgnames, levels=orgnames), Number=as.numeric(orgs_tab))
+
+library(ggplot2)
+
+ggplot(data=orgs, aes(x=Organization, y=Number)) + 
+    geom_bar(stat="identity") +
+    theme(axis.text.x = element_text(angle = 20, hjust = 1)) +
+    ylab("Number Attending") + 
+    ggtitle("Most Represented Organizations")
+
+```
+
+
+A map of USA-based registrants is given below:
+
+```{r, eval=TRUE, echo=FALSE}
+suppressPackageStartupMessages(library(mapdata))
+suppressPackageStartupMessages(library(ggmap))
+suppressPackageStartupMessages(library(grDevices))
+
+states <- registrants$State
+states <- state_s2l(states)
+
+bg <- rgb(0, 0, 1)
+fg <- rgb(0, .5, .3)
+
+
+orgs <- sort(unique(registrants$Organization))
+suppressWarnings(suppressMessages(codes <- geocode(orgs)))
+
+geo <- data.frame(lon=codes$lon, lat=codes$lat, num=as.numeric(table(registrants$Organization)))
+
+regions <- names(table(toupper(states)))
+
+
+
+map("state")
+map("state", regions=names(table(states)), fill=TRUE, col=bg, add=TRUE)
+with(geo, points(lon, lat, cex=sqrt(num), pch=19, col=fg))
+```
+
